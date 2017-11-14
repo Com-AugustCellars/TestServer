@@ -1,0 +1,35 @@
+[
+//
+/ Set of  items that we are using for OSCOAP messages /
+//
+{ "usage":"oscoap", 1:4 / kty:symmetric /, 2: h'4b65792330',   3:10 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223'}, 
+{ "usage":"oscoap", 1:4 / kty:symmetric /, 2: h'4b65792331',   3:10 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'020406080a0c0e10121416181a1c1e20222426282a2c2e30323436383a3c3e40424446'}, 
+{ "usage":"oscoap", 1:4 / kty:symmetric /, 2: h'4b65792332',   3:10 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'0306090c0f1215181b1e2124272a2d303336393c3f4245484b4e5154575a5d60636669' }, 
+{ "usage":"oscoap", 1:4 / kty:symmetric /, 2: h'4b65792332',   3:30 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'04080c1014181c2024282c3034383c4044484c5054585c6064686c7074787c8084888c'  },
+{ "usage":"oscoap", 1:4 / kty:symmetric /, 2: 'client', 3:10 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223' },
+
+//
+/ Key that we are using for Multi-recipient OSCOAP messages /
+//
+{ "usage":"oscoap-group", 1:4 / kty:symmetric /, 2: 'group01' /group id/, 3:10 /alg:ccm/, -1: h'080c1014181c2024282c3034383c4044484c5054585c6064686c7074787c8084888c8992' /group key/,
+    "sender":{ "ID": 'member1', "sign": { -1:1, -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff', -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e', 1:2, 2:'11' }},
+   "recipients":[
+     {"ID": 'member2', "sign": { 1:2, -1:3, -2:h'0072992cb3ac08ecf3e5c63dedec0d51a8c1f79ef2f82f94f3c737bf5de7986671eac625fe8257bbd0394644caaa3aaf8f27a4585fbbcad0f2457620085e5c8f42ad',
+                 -3:h'01dca6947bce88bc5790485ac97427342bc35f887d86d65a089377e247e60baa55e4e8501e2ada5724ac51d6909008033ebc10ac999b9d7f5cc2519f3fe1ea1d9475', 2:'bilbo.baggins@hobbiton.example', 3:'DSA' }},
+     {"ID": 'member3', "sign":{ 1:2, -1:1, -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff', -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e', 2:'11', 3:'DSA' } }
+   ]},
+
+//
+/ EDHOC keys /
+//
+{"usage":"edhoc", 1:4 / kty:symmetric /, 2: h'636c69656e7F', 3:30 /alg:ccm/, "KDF": "dir+kdf", "SenderID": h'636c69656e7F', "RecipID": 'server', -1: h'04080c1014181c2024282c3034383c4044484c5054585c6064686c7074787c8084888c'  },
+{"usage":"edhoc", 1:4 / kty:symmetric /, 2: h'4b65792330', 3:10 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223' },
+
+//
+/ TLS keys /
+//
+
+{"usage":"dtls", 1:4 / kty:symmetric /, 2:'client', -1:'This_is_the_key_to_use'}
+
+]
+
