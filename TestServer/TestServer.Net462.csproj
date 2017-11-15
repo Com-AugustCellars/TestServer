@@ -38,6 +38,9 @@
     <Reference Include="CBOR, Version=3.0.0.0, Culture=neutral, PublicKeyToken=9cd62db60ea5554c, processorArchitecture=MSIL">
       <HintPath>..\packages\PeterO.Cbor.3.0.0\lib\netstandard1.0\CBOR.dll</HintPath>
     </Reference>
+    <Reference Include="CoAP, Version=1.1.6.0, Culture=neutral, PublicKeyToken=e2c10a743037308b, processorArchitecture=MSIL">
+      <HintPath>..\packages\Com.AugustCellars.CoAP.1.1.8.1\lib\portable-net45+dnxcore50+netcore45+win+wpa81+wp80\CoAP.dll</HintPath>
+    </Reference>
     <Reference Include="COSE, Version=1.1.0.0, Culture=neutral, PublicKeyToken=feba232d7e8953ed, processorArchitecture=MSIL">
       <HintPath>..\packages\Com.AugustCellars.COSE.1.1.0\lib\netstandard1.0\COSE.dll</HintPath>
     </Reference>
@@ -81,18 +84,7 @@
     <Compile Include="Token.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\cose\oscoap\EDHOC-csharp\EDHOC.NET45.csproj">
-      <Project>{787820e9-ca79-4398-a17b-73ce1ff158db}</Project>
-      <Name>EDHOC.NET45</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CoAP-CSharp\CoAP.NET\CoAP.NET45.csproj">
-      <Project>{45db1e45-4831-4e4a-bb1e-ae92eea182e3}</Project>
-      <Name>CoAP.NET45</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

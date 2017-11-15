@@ -9,7 +9,9 @@ using Com.AugustCellars.CoAP.DTLS;
 using Com.AugustCellars.CoAP.Log;
 using Com.AugustCellars.CoAP.Server;
 using Com.AugustCellars.CoAP.Server.Resources;
+#if DEV_VERSION
 using Com.AugustCellars.CoAP.TLS;
+#endif
 
 using Com.AugustCellars.COSE;
 using Com.AugustCellars.CoAP.OSCOAP;
@@ -101,7 +103,7 @@ namespace TestServer
                             SecurityContextSet.AllContexts.Add(ctx);
                             break;
                         }
-
+#if DEV_VERSION
                         else if (usage == "oscoap-group") {
                             SecurityContext ctx = SecurityContext.DeriveGroupContext(key[CoseKeyParameterKeys.Octet_k].GetByteString(), key[CoseKeyKeys.KeyIdentifier].GetByteString(), 
                                 key[CBORObject.FromObject("sender")][CBORObject.FromObject("ID")].GetByteString(), null, null, key[CoseKeyKeys.Algorithm]);
@@ -111,7 +113,7 @@ namespace TestServer
                             }
                             SecurityContextSet.AllContexts.Add(ctx);
                         }
-
+#endif
                         else if (usage == "dtls") {
                             if (key.HasPrivateKey()) {
                                 DtlsSignKeys.AddKey(key);
@@ -215,8 +217,7 @@ namespace TestServer
 
             server.Add(new LargeResource("LargeResource"));
 
-#if true
-
+#if DEV_VERSION
             server.Add(new Com.AugustCellars.CoAP.EDHOC.EdhocResource(edhocKeys, edhocSign));
 #endif
 
@@ -224,6 +225,7 @@ namespace TestServer
 
             server.Start();
 
+#if DEV_VERSION
             server = new CoapServer(config);
             TcpEndPoint tcp = new TcpEndPoint(CoapConfig.Default.DefaultPort);
             tcp.Start();
@@ -231,6 +233,7 @@ namespace TestServer
 
             server.Add(new HelloWorldResource("hello", false));
             server.Start();
+#endif
 
             Console.WriteLine("Press key to exit");
             Console.ReadKey();
