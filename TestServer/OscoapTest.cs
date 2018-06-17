@@ -4,7 +4,7 @@ using Com.AugustCellars.CoAP.Util;
 using Com.AugustCellars.CoAP;
 
 
-namespace server
+namespace TestServer
 {
     class OscoapTest : Resource
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Com.AugustCellars. CoAP.Server.Resources;
 using Com.AugustCellars.CoAP;
-namespace server
+namespace TestServer
 {
     /// <summary>
     /// This resource responds with a kind "hello world" to GET requests.
