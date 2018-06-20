@@ -10,14 +10,14 @@ namespace CoAP.Examples.Resources
         private Timer _timer;
         private DateTime _now;
 
-        public TimeResource(String name)
+        public TimeResource(String name, int seconds = 5)
             : base(name)
         {
             Attributes.Title = "GET the current time";
             Attributes.AddResourceType("CurrentTime");
             Observable = true;
 
-            _timer = new Timer(Timed, null, 0, 2000);
+            _timer = new Timer(Timed, null, 0, seconds * 1000);
         }
 
         private void Timed(Object o)
