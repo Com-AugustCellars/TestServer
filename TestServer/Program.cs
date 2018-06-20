@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -38,8 +39,7 @@ namespace TestServer
 
         public static ManualResetEvent ExitEvent = new ManualResetEvent(false);
 
-
-        static void PrintCommandLine()
+        private static void PrintCommandLine()
         {
             Console.WriteLine("Command line for server is:");
             Console.WriteLine("server <args>");
@@ -47,6 +47,7 @@ namespace TestServer
             Console.WriteLine("--config=<fileName>\tLoad server configuration");
             Console.WriteLine("--generate=<fileName>\tGenerate a new set of keys");
             Console.WriteLine("--keyfile=<fileName>\tLoad initial keys from here");
+            Console.WriteLine("--ipaddress=<address>\tAddress to run the server on");
             Console.WriteLine();
             Console.WriteLine("Load keys from Serverkeys.cbor by default");
             Environment.Exit(1);
@@ -166,12 +167,14 @@ namespace TestServer
             return keys;
         }
 
+        static EndPoint ServerEndPoint = null;
+        static bool AsDemon = false;
+
         static void Main(string[] args)
         {
             ICoapConfig config = null;
             KeySet allKeys = null;
-            bool asDemon = false;
-            EndPoint serverEndPoint = null;
+            string interopTest = null;
 
             LogManager.Level = LogLevel.All;
             LogManager.Instance = new FileLogManager(Console.Out);
@@ -198,10 +201,11 @@ namespace TestServer
                     break;
 
                 case "--demon":
-                    asDemon = true;
+                    AsDemon = true;
                     break;
 
                 case "--ipAddr":
+                case "--ipaddress":
                     if (s[1] == null) PrintCommandLine();
                     IPAddress ip;
                     if (!IPAddress.TryParse(s[1], out ip)) {
@@ -209,8 +213,13 @@ namespace TestServer
                         PrintCommandLine();
                     }
 
-                    serverEndPoint = new IPEndPoint(ip, 0);
+                    ServerEndPoint = new IPEndPoint(ip, 0);
 
+                    break;
+
+                case "--interop-test":
+                    if (s[1] == null) PrintCommandLine();
+                    interopTest = s[1];
                     break;
 
                 default:
@@ -219,15 +228,19 @@ namespace TestServer
                 }
             }
 
+            if (interopTest != null) {
+                RunInteropTests(interopTest, config, ServerEndPoint);
+            }
+
             if (allKeys == null) {
                 allKeys = LoadKeys(null);
             }
 
 
-            CoapServer server1 = SetupServer(config, serverEndPoint, CoapConfig.Default.DefaultPort, DtlsSignKeys, DtlsValidateKeys);
-            CoapServer server2 = SetupServer(config, serverEndPoint, 5685, DtlsSignKeys, DtlsValidateKeys);
+            CoapServer server1 = SetupServer(config, ServerEndPoint, CoapConfig.Default.DefaultPort, DtlsSignKeys, DtlsValidateKeys);
+            CoapServer server2 = SetupServer(config, ServerEndPoint, 5685, DtlsSignKeys, DtlsValidateKeys);
 
-            if (asDemon) {
+            if (AsDemon) {
                 ExitEvent.WaitOne();
             }
             else {
@@ -340,5 +353,34 @@ namespace TestServer
 
         }
 
+
+        private static void RunInteropTests(string testToRun, ICoapConfig config, EndPoint serverEndPoint)
+        {
+            CoapServer server = new CoapServer(config, serverEndPoint, 5683);
+
+            switch (testToRun) {
+            case "CoapCore":
+                InteropTests.CoapCoreTests.CoapCoreTests.Setup(server);
+                break;
+
+            default:
+                Console.WriteLine("Interop test name not recognized");
+                Environment.Exit(1);
+                break;
+            }
+
+            server.Start();
+
+            if (AsDemon) {
+                ExitEvent.WaitOne();
+            }
+            else {
+                Console.WriteLine("Press key to exit");
+                Console.ReadKey();
+            }
+
+            Environment.Exit(0);
+        }
     }
 }
+
