@@ -23,6 +23,8 @@ namespace TestServer.InteropTests.CoapCoreTests
             server.Add(new LargeResource("large_update"));
             server.Add(new LargeResource("large_create"));
             server.Add(new TimeResource("obs", 5));
+            server.Add(new MultiFormat());
+            server.Add(new LocationQuery());
         }
     }
 }
