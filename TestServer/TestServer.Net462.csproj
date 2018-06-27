@@ -96,7 +96,9 @@
     <Compile Include="HelloWorldResource.cs" />
     <Compile Include="ImageResource.cs" />
     <Compile Include="InteropTests\CoapCoreTests\CoapCoreTests.cs" />
+    <Compile Include="InteropTests\CoapCoreTests\LocationQuery.cs" />
     <Compile Include="InteropTests\CoapCoreTests\LongPathcs.cs" />
+    <Compile Include="InteropTests\CoapCoreTests\MultiFormat.cs" />
     <Compile Include="InteropTests\CoapCoreTests\Query.cs" />
     <Compile Include="InteropTests\CoapCoreTests\Separate.cs" />
     <Compile Include="InteropTests\CoapCoreTests\TestResource.cs" />

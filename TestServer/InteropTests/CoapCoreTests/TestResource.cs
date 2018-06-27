@@ -31,8 +31,26 @@ namespace TestServer.InteropTests.CoapCoreTests
 
             Response resp = new Response(StatusCode.Content);
             resp.MaxAge = 30;
+            resp.ContentFormat = MediaType.TextPlain;
 
             exchange.Respond(resp);
+        }
+
+        protected override void DoDelete(CoapExchange exchange)
+        {
+            exchange.Respond(StatusCode.Deleted);
+        }
+
+        protected override void DoPost(CoapExchange exchange)
+        {
+            exchange.LocationPath = "/location1/location2/location3";
+            exchange.Respond(StatusCode.Changed);
+        }
+
+        protected override void DoPut(CoapExchange exchange)
+        {
+            exchange.LocationPath = "/here/it/is";
+            exchange.Respond(StatusCode.Changed);
         }
     }
 }
