@@ -20,6 +20,7 @@ namespace TestServer
             }
 
             _payload = new byte[0];
+            this.Observable = false;
         }
 
         protected override void DoGet(CoapExchange exchange)
@@ -32,24 +33,34 @@ namespace TestServer
             Response response;
 
             switch (Name) {
-                case "1": {
+                    // Should be security context A or context C
+                    // Simple get returns text
+                case "1":
                     response = new Response(StatusCode.Content) {
                         PayloadString = "Hello World!",
                         ContentFormat = 0
                     };
                     break;
-                }
 
-                case "2": {
+
+                case "2":
+                    if (request.UriQuery != "first=1") {
+                        exchange.Respond(StatusCode.BadRequest);
+                        return;
+                    }
                     response = new Response(StatusCode.Content) {
                         PayloadString = "Hello World!",
                         ContentFormat =  MediaType.TextPlain
                     };
                     response.AddETag(new byte[] {0x2b});
                     break;
-                }
+                
 
                 case "3": {
+                    if (request.Accept != 0) {
+                        exchange.Respond(StatusCode.BadRequest);
+                        return;
+                    }
                     response = new Response(StatusCode.Content) {
                         PayloadString = "Hello World!",
                         ContentFormat = MediaType.TextPlain,
@@ -58,6 +69,7 @@ namespace TestServer
                     break;
                 }
 
+                    //  Non-secure resource - returns a text string.
                 case "coap": {
                     response = new Response(StatusCode.Content) {
                         PayloadString = "Hello World!"

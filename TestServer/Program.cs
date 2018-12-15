@@ -236,6 +236,20 @@ namespace TestServer
                 allKeys = LoadKeys(null);
             }
 
+            if (true) {
+                SecurityContext a = SecurityContext.DeriveContext(
+                    new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
+                    new byte[]{1}, new byte[0],
+                    new byte[] { 0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 });
+                SecurityContextSet.AllContexts.Add(a);
+
+                a = SecurityContext.DeriveGroupContext(
+                    new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
+                    new byte[] { 0x37, 0xcb, 0xf3, 0x21, 0x00, 0x17, 0xa2, 0xd3 }, new byte[]{1},
+                    new byte[][] { new byte[] { } },
+                    new byte[] { 0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 });
+                SecurityContextSet.AllContexts.Add(a);
+            }
 
             CoapServer server1 = SetupServer(config, ServerEndPoint, CoapConfig.Default.DefaultPort, DtlsSignKeys, DtlsValidateKeys);
             CoapServer server2 = SetupServer(config, ServerEndPoint, 5685, DtlsSignKeys, DtlsValidateKeys);
@@ -260,28 +274,37 @@ namespace TestServer
             //
 
             CoapServer server = new CoapServer(config, endPoint, port);
+            if (port == CoapConfig.Default.DefaultPort) {
+                server.AddMulticastAddress(new IPEndPoint(IPAddress.Parse("224.0.1.187"/*"[ff02::100]"*/), CoapConfig.Default.DefaultPort));
+            }
+
             DTLSEndPoint ep2 = new DTLSEndPoint(dtlsSignKeys, dtlsValidateKeys, port+1);
             server.AddEndPoint(ep2);
 
             IResource root = new HelloWorldResource("hello", true);
             server.Add(root);
 
-            IResource x = new OscoapTest("coap");
-            root.Add(x);
+            IResource r2 = new OscoapTest("oscore");
+            server.Add(r2);
 
-            x = new OscoapTest("1");
-            root.Add(x);
+            IResource r1 = new OscoapTest("hello");
+            r2.Add(r1);
 
-            root.Add(new OscoapTest("2"));
-            root.Add(new OscoapTest("3"));
-            root.Add(new OscoapTest("6"));
-            root.Add(new OscoapTest("7"));
+            r1.Add(new OscoapTest("coap"));
+            IResource x = new OscoapTest("1");
+            r1.Add(x);
 
-            server.Add(new OscoapTest("test"));
+            r1.Add(new OscoapTest("2"));
+            r1.Add(new OscoapTest("3"));
+            r1.Add(new OscoapTest("6"));
+            r1.Add(new OscoapTest("7"));
 
-            server.Add(new TimeResource("observe"));
+            r2.Add(new OscoapTest("test"));
 
-            server.Add(new LargeResource("LargeResource"));
+            r2.Add(new OscoapObserve("observe1"));
+            r2.Add(new OscoapObserve("observe2"));
+
+            r2.Add(new LargeResource("LargeResource"));
 
 #if DEV_VERSION
             AceTest.Setup(server, "RS1");
@@ -290,8 +313,8 @@ namespace TestServer
 #endif
 
             //  Setup the ACE resources
-            string UseAsServer = "coaps://localhost:5689/token";
-            // UseAsServer = "coaps://31.133.142.90/token";
+            // string UseAsServer = "coaps://localhost:5689/token";
+            string UseAsServer = "coaps://31.133.132.127/token";
             // UseAsServer = "coaps://31.133.134.176/token";
 
             KeySet myDecryptKeySet = new KeySet();
@@ -311,7 +334,7 @@ namespace TestServer
             key.Add(CoseKeyKeys.Algorithm, CBORObject.FromObject(5));
             myDecryptKeySet.AddKey(key);
 
-            AuthZ authZ = new AuthZ(myDecryptKeySet, null);
+            AuthZ authZ = new AuthZ(myDecryptKeySet, null, ep2);
             server.Add(authZ);
             AceOAuthTest r = new AceOAuthTest("ace-echo", true, true, UseAsServer);
             r.AuthTokenProcessor = authZ;

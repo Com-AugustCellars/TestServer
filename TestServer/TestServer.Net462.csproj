@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="CarelessResource.cs" />
     <Compile Include="ClientResource.cs" />
+    <Compile Include="InteropTests\CoapCoreTests\ETagResource.cs" />
     <Compile Include="FibonacciResource.cs" />
     <Compile Include="HelloWorldResource.cs" />
     <Compile Include="ImageResource.cs" />

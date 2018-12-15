@@ -25,6 +25,9 @@ namespace TestServer.InteropTests.CoapCoreTests
             server.Add(new TimeResource("obs", 5));
             server.Add(new MultiFormat());
             server.Add(new LocationQuery());
+            server.Add(new ETagResource("create1"));
+            server.Add(new ETagResource("validate", true));
+
         }
     }
 }
