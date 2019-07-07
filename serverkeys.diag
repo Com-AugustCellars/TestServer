@@ -11,13 +11,75 @@
 //
 / Key that we are using for Multi-recipient OSCOAP messages /
 //
-{ "usage":"oscoap-group", 1:4 / kty:symmetric /, 2: 'group01' /group id/, 3:10 /alg:ccm/, -1: h'080c1014181c2024282c3034383c4044484c5054585c6064686c7074787c8084888c8992' /group key/,
-    "sender":{ "ID": 'member1', "sign": { -1:1, -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff', -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e', 1:2, 2:'11' }},
+{ "usage":"oscoap-group", 1:4 / kty:symmetric /, 2: 'group01' /group id/, 3:10 /alg:ccm/, -1: h'080c1014181c2024282c3034383c4044484c5054585c6064686c7074787c8084888c8992' /group key/, "sign-alg":-7,
+    "sender":{ "ID": 'member1', "sign": { -1:1, -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff', -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e', 1:2, 2:'11', 3:-7 }},
    "recipients":[
      {"ID": 'member2', "sign": { 1:2, -1:3, -2:h'0072992cb3ac08ecf3e5c63dedec0d51a8c1f79ef2f82f94f3c737bf5de7986671eac625fe8257bbd0394644caaa3aaf8f27a4585fbbcad0f2457620085e5c8f42ad',
-                 -3:h'01dca6947bce88bc5790485ac97427342bc35f887d86d65a089377e247e60baa55e4e8501e2ada5724ac51d6909008033ebc10ac999b9d7f5cc2519f3fe1ea1d9475', 2:'bilbo.baggins@hobbiton.example', 3:'DSA' }},
-     {"ID": 'member3', "sign":{ 1:2, -1:1, -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff', -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e', 2:'11', 3:'DSA' } }
+                 -3:h'01dca6947bce88bc5790485ac97427342bc35f887d86d65a089377e247e60baa55e4e8501e2ada5724ac51d6909008033ebc10ac999b9d7f5cc2519f3fe1ea1d9475', 2:'bilbo.baggins@hobbiton.example', 3:-7 }},
+     {"ID": 'member3', "sign":{ 1:2, -1:1, -2:h'bac5b11cad8f99f9c72b05cf4b9e26d244dc189f745228255a219a86d6a09eff', -3:h'20138bf82dc1b6d562be0fa54ab7804a3a64b6d72ccfed6b6fb6ed28bbfc117e', 2:'11', 3:-7 } }
    ]},
+
+{ "usage":"oscoap-group",
+    "GroupID":h'37cbf3210017a2d3', / Group ID /
+    2:h'37cbf3210017a2d3', / Group ID /
+    "sign-alg": -7, / Signature Algorithm for Everybody /
+    
+    3:10, / AEAD Algorithm : 10 /
+    1:4, / Key Type Symmetric /
+    -1:h'0102030405060708090a0b0c0d0e0f10', / Octet Key - Master Secret /
+    8:h'9e7ca92223786340', / Salt - Master Salt /
+    
+    "sender":{
+        "ID":h'01', / Recipient ID /
+        "seq": 0, / Sender Sequence Number /
+        "sign":{  / Senders Signing Key /
+                1: 2,
+                3: -7,
+                -1: 1,
+                -2: h'2A6D567BCC61FC04E29230981F04825B4B856C7BFEA77A8FDE380A159EE73926',
+                -3: h'19CEBDDB6D62A238DB4120EC323E28BF6AC2F039080581E0EFAB3F86052BF621',
+                -4: h'DEBE946063EE5EA7F66ED7AA3769C1803F039F161D3723F22838E4F7E75FAEA4'
+        }
+    },
+    "recipients":[
+        {
+            "ID":h'', / Sender's ID /
+            "replay-base": 0, / Reply base # /
+            "sign": {
+            1: 2,
+            3: -7,
+            -1: 1,
+            -2: h'7067ACDEB2790DA87AC66E5F666DEA75532077789E73279FD9932DFCEEED9A96',
+            -3: h'8FA6990D0EE67850AFDD974D2A451A811E6B9CA834E895ACC818D27FF31140E4',
+            -4: h'D4D9AFD692B5F95865390845641CEAAA9E767E2878D208C516FF7717013BB042'
+            } / Reipient signing key /
+        },
+        {
+            "ID":h'9999', / Recipient ID /
+            "replay-base": 0, / Reply base # /
+            "sign": {
+                1: 2,
+                3: -7,
+                -1: 1,
+                -2: h'D86044496516724C760C030C5506694E554B3F96D8BC283ABC1F467197E0B50F',
+                -3: h'E1942FBE9C10FEE8ED3DE93BCE05A534E96D0282E81D700AA836C2EB95654C1B',
+                -4: h'FD74E1FBA317BBE7874A891267C5C2514679563791597FE09EE9264649604215'
+            } / Reipient signing key /
+        },
+        {
+            "ID":h'3333', / Recipient ID /
+            "replay-base": 0, / Reply base # /
+            "sign": {
+                1: 2,
+                3: -7,
+                -1: 1,
+                -2: h'8C5E2681C5B4A9C9E4FA35ED2A25E285142FF66C07065C5EC3D62F453D493F8C',
+                 -3: h'D1CFECE37613108827BA78665B3C126C47A6B0077FC9EA4AD375A62282761A79',
+                 -4: h'73906751BB39D074E32E92B1F269A99759A2E5752D1B8C81177F96920BAE2EE4'
+            } / Reipient signing key /
+        }
+    ]
+},
 
 //
 / EDHOC keys /
@@ -26,10 +88,22 @@
 {"usage":"edhoc", 1:4 / kty:symmetric /, 2: h'4b65792330', 3:10 /alg:ccm/, "KDF": "dir+kdf", "SenderID": 'client', "RecipID": 'server', -1: h'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223' },
 
 //
-/ TLS keys /
+/ TLS keys -- symmetric and RPK /
 //
 
 {"usage":"dtls", 1:4 / kty:symmetric /, 2:'client', -1:'This_is_the_key_to_use'},
 {"usage":"dtls", 1: 2, /3: -7, /-1: 1, -2: h'12D6E8C4D28F83110A57D253373CAD52F01BC447E4093541F643B385E179C110', -3: h'283B3D8D28FFA59FE5CB540412A750FA8DFA34F6DA69BCDA68400D679C1347E8'},
-{"usage":"dtls", 1:2, 3:-7, -1:1, -2:h'73B7D755827D5D59D73FD4015D47B445762F7CDB59799CD966714AB2727F1BA5', -3:h'1A84F5C82797643D33F7E6E6AFCF016522238CE430E1BF21A218E6B4DEEAC37A', -4:h'00EA086573C683477D74EB7A0C63A6D031D5DEB10F3CC2876FDA6D3400CAA4E507'}
+{"usage":"dtls", 1:2, 3:-7, -1:1, -2:h'73B7D755827D5D59D73FD4015D47B445762F7CDB59799CD966714AB2727F1BA5', -3:h'1A84F5C82797643D33F7E6E6AFCF016522238CE430E1BF21A218E6B4DEEAC37A', -4:h'00EA086573C683477D74EB7A0C63A6D031D5DEB10F3CC2876FDA6D3400CAA4E507'},
+
+//
+/ TLS keys -- CWT /
+//
+
+{"usage":"cwt-trust", "key":{1: 2, -1: 1, -2: h'F8429D2573589C98A4C47FE882AA5A7165A776B46E35F91697B48814A0E5ACB2', -3: h'B41189B77DCE91E181C7FBB65157F574D9E644B1E2A32F18DAC85BA14A1700E7', -4: h'5B026793224ADA30718F318762AFD7C371E063664AC8BDBBCED92CE214B314CB', 3: -7}},
+
+{"usage":"dtls-cwt",
+        "cwt":61(18([h'A10126', {}, h'A11819A101A60102200121582080F1DAAF3EF0238E4ABBA6B001D896BE481048A1B06CAE4F5CF809EDC0BED1B82258200CE5664B2306CC4D60D9DCB267154E8D0FE71A9EAD0FBF16F05651E550E53667235820B8D94B96FCCC70E136CD8878590476CD4C5A50522FEADADA1729EDA02F1CE0E00326', h'5BE7F1A120ACC322E5AA14D985CFC9CAC854025F2573C3EA9D8995254B5D5DC6DFCA4789D6EB71A65C2512DD115410B94996E482827711719F1BEF5576D9DC27'])),
+        "key":{1: 2, -1: 1, -2: h'80F1DAAF3EF0238E4ABBA6B001D896BE481048A1B06CAE4F5CF809EDC0BED1B8', -3: h'0CE5664B2306CC4D60D9DCB267154E8D0FE71A9EAD0FBF16F05651E550E53667', -4: h'B8D94B96FCCC70E136CD8878590476CD4C5A50522FEADADA1729EDA02F1CE0E0', 3: -7}}
+
+
 ]

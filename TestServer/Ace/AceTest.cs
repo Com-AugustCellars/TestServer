@@ -49,7 +49,7 @@ namespace server
         {
             _asInfo = new AsInfo() {
                 // ASServer = "coaps://ASServer/token"
-               ASServer = "coaps://localhost:5689/token"
+               ASServer = "coap://localhost:5688/token"
                 // ASServer = "coaps://31.133.145.200/token"
             };
             _allowOscore = true;
@@ -67,6 +67,7 @@ namespace server
             else if (_allowOscore && exchange.Request.OscoapContext != null) {
                 if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoapContext)) {
                     Unauthorized(exchange);
+                    return;
                 }
             }
             else {
@@ -100,7 +101,7 @@ namespace server
         {
             _asInfo = new AsInfo() {
                 // ASServer = "coaps://31.133.145.200/token"
-                ASServer = "coaps://localhost:5689/token"
+                ASServer = "coap://localhost:5688/token"
             };
             _allowOscore = true;
         }

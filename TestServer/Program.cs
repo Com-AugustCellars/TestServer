@@ -2,6 +2,7 @@
 using System.CodeDom;
 using System.IO;
 using System.Net;
+using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Threading;
 using CoAP.Examples.Resources;
@@ -29,7 +30,7 @@ namespace TestServer
     {
         private static readonly CBORObject _UsageKey = CBORObject.FromObject("usage");
 
-        private static readonly KeySet DtlsSignKeys = new KeySet();
+        private static readonly TlsKeyPairSet DtlsSignKeys = new TlsKeyPairSet();
         public static readonly KeySet DtlsValidateKeys = new KeySet();
         private static readonly KeySet edhocKeys = new KeySet();
         private static OneKey edhocSign = null;
@@ -88,6 +89,8 @@ namespace TestServer
             Environment.Exit(0);
         }
 
+        static KeySet CwtVerifiers = new KeySet();
+
         static KeySet LoadKeys(string fileName)
         {
             if (fileName == null) fileName = "ServerKeys.cbor";
@@ -108,6 +111,7 @@ namespace TestServer
                         if (usage == "oscoap") {
                             SecurityContext ctx = SecurityContext.DeriveContext(
                                 key[CoseKeyParameterKeys.Octet_k].GetByteString(),
+                                null,
                                 key[CBORObject.FromObject("RecipID")].GetByteString(),
                                 key[CBORObject.FromObject("SenderID")].GetByteString(), null,
                                 key[CoseKeyKeys.Algorithm]);
@@ -116,12 +120,17 @@ namespace TestServer
                         }
 #if DEV_VERSION
                         else if (usage == "oscoap-group") {
+                            byte[] salt = null;
+                            if (key.ContainsName(CoseKeyKeys.slt)) {
+                                salt = key[CoseKeyKeys.slt].GetByteString();
+                            }
                             SecurityContext ctx = SecurityContext.DeriveGroupContext(
                                 key[CoseKeyParameterKeys.Octet_k].GetByteString(),
                                 key[CoseKeyKeys.KeyIdentifier].GetByteString(),
-                                key[CBORObject.FromObject("sender")][CBORObject.FromObject("ID")].GetByteString(), null,
-                                null, key[CoseKeyKeys.Algorithm]);
-                            ctx.Sender.SigningKey = new OneKey(obj[i]["sign"]);
+                                key[CBORObject.FromObject("sender")][CBORObject.FromObject("ID")].GetByteString(),
+                                key[CBORObject.FromObject("sign-alg")],
+                                new OneKey(obj[i]["sender"]["sign"]), 
+                                null, null, salt);
                             foreach (CBORObject recipient in key[CBORObject.FromObject("recipients")].Values) {
                                 ctx.AddRecipient(recipient[CBORObject.FromObject("ID")].GetByteString(),
                                                  new OneKey(recipient["sign"]));
@@ -132,13 +141,21 @@ namespace TestServer
 #endif
                         else if (usage == "dtls") {
                             if (key.HasPrivateKey()) {
-                                DtlsSignKeys.AddKey(key);
+                                DtlsSignKeys.AddKey(new TlsKeyPair( key, key));
                             }
                             else {
                                 DtlsValidateKeys.AddKey(key);
                             }
                         }
 
+                        else if (usage == "cwt-trust") {
+                            CwtVerifiers.AddKey(new OneKey(obj[i]["key"]));
+                        }
+                        
+                        else if (usage == "dtls-cwt") {
+                            CWT cwt = CWT.Decode(obj[i]["cwt"].EncodeToBytes(), CwtVerifiers, CwtVerifiers);
+                            DtlsSignKeys.AddKey(new TlsKeyPair(cwt, new OneKey(obj[i]["key"])));
+                        }
                         else if (usage == "edhoc") {
                             if (key[CoseKeyKeys.KeyType].Equals(GeneralValues.KeyType_EC) ||
                                 key[CoseKeyKeys.KeyType].Equals(GeneralValues.KeyType_OKP)) {
@@ -154,10 +171,6 @@ namespace TestServer
                             }
                         }
 
-                    }
-
-                    if ((usages.Length != 1) || (usages[0] != "oscoap")) {
-                        keys.AddKey(key);
                     }
                 }
 
@@ -177,6 +190,8 @@ namespace TestServer
             string interopTest = null;
 
             LogManager.Level = LogLevel.All;
+            // LogManager.LoggingExclude = null;
+            // LogManager.LoggingInclude = new String[] {"UDPChannel"};
             LogManager.Instance = new FileLogManager(Console.Out);
 
             for (int i = 0; i < args.Length; i++) {
@@ -237,18 +252,22 @@ namespace TestServer
             }
 
             if (true) {
+                /*
                 SecurityContext a = SecurityContext.DeriveContext(
                     new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
                     new byte[]{1}, new byte[0],
                     new byte[] { 0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 });
                 SecurityContextSet.AllContexts.Add(a);
+                */
 
+                /*
                 a = SecurityContext.DeriveGroupContext(
                     new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
                     new byte[] { 0x37, 0xcb, 0xf3, 0x21, 0x00, 0x17, 0xa2, 0xd3 }, new byte[]{1},
                     new byte[][] { new byte[] { } },
                     new byte[] { 0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40 });
                 SecurityContextSet.AllContexts.Add(a);
+                */
             }
 
             CoapServer server1 = SetupServer(config, ServerEndPoint, CoapConfig.Default.DefaultPort, DtlsSignKeys, DtlsValidateKeys);
@@ -267,7 +286,7 @@ namespace TestServer
         }
 
 
-        static CoapServer SetupServer(ICoapConfig config, EndPoint endPoint, int port, KeySet dtlsSignKeys,
+        static CoapServer SetupServer(ICoapConfig config, EndPoint endPoint, int port, TlsKeyPairSet dtlsSignKeys,
                                KeySet dtlsValidateKeys)
         { 
             //
@@ -276,9 +295,10 @@ namespace TestServer
             CoapServer server = new CoapServer(config, endPoint, port);
             if (port == CoapConfig.Default.DefaultPort) {
                 server.AddMulticastAddress(new IPEndPoint(IPAddress.Parse("224.0.1.187"/*"[ff02::100]"*/), CoapConfig.Default.DefaultPort));
+                server.AddMulticastAddress(new IPEndPoint(IPAddress.Parse("[FF02:0:0:0:0:0:0:FD]"), CoapConfig.Default.DefaultPort));
             }
 
-            DTLSEndPoint ep2 = new DTLSEndPoint(dtlsSignKeys, dtlsValidateKeys, port+1);
+            DTLSEndPoint ep2 = new DTLSEndPoint(dtlsSignKeys, dtlsValidateKeys, port+1, CwtVerifiers);
             server.AddEndPoint(ep2);
 
             IResource root = new HelloWorldResource("hello", true);
@@ -314,8 +334,10 @@ namespace TestServer
 
             //  Setup the ACE resources
             // string UseAsServer = "coaps://localhost:5689/token";
-            string UseAsServer = "coaps://31.133.132.127/token";
+            // string UseAsServer = "coaps://31.133.132.127/token";
             // UseAsServer = "coaps://31.133.134.176/token";
+            string UseAsServer = "coap://192.168.0.15:5689/token";
+            
 
             KeySet myDecryptKeySet = new KeySet();
             OneKey key = new OneKey();

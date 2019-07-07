@@ -88,7 +88,7 @@ namespace TestServer
 
                 case MediaType.ApplicationAceCbor:
                     CBORObject obj = CBORObject.DecodeFromBytes(req.Payload);
-                    cwt = CWT.Decode(obj[Oauth_Parameter.Access_Token.Key].GetByteString(), _myKeys, _asSigningKeys);
+                    cwt = CWT.Decode(obj[CBORObject.FromObject(Oauth_Parameter.Access_Token.Key)].GetByteString(), _myKeys, _asSigningKeys);
                     break;
 
                 default:
@@ -217,32 +217,56 @@ namespace TestServer
                 }
                 else {
                     if (cwt.Profile == (int) ProfileIds.Coap_Oscore) {
-                        OneKey oneKey = cwt.Cnf.Key;
+                        CBORObject obj = CBORObject.DecodeFromBytes(req.Payload);
+                        byte[] clientSalt = new byte[0];
+                        if (obj.ContainsKey((CBORObject) Oauth_Parameter.CNonce)) {
+                            clientSalt = obj[(CBORObject) Oauth_Parameter.CNonce].GetByteString();
+                        }
+
+                        byte[] serverSalt = Encoding.UTF8.GetBytes("ServerSalt");
+
+                        CBORObject oscoreContext = cwt.Cnf.AsCBOR[CBORObject.FromObject(Confirmation.ConfirmationIds.COSE_OSCORE)];
+
+
                         byte[] salt = null;
-                        if (oneKey.ContainsName(CoseKeyKeys.slt)) salt = oneKey[CBORObject.FromObject(CoseKeyKeys.slt)].GetByteString();
+                        if (oscoreContext.ContainsKey(CBORObject.FromObject(6))) salt = oscoreContext[CBORObject.FromObject(6)].GetByteString();
+
+                        byte[] context = null;
+                        if (oscoreContext.ContainsKey(CBORObject.FromObject(7))) context = oscoreContext[CBORObject.FromObject(7)].GetByteString();
+
                         CBORObject alg = null;
-                        if (oneKey.ContainsName(CoseKeyKeys.Algorithm)) {
-                            alg = oneKey[CoseKeyKeys.Algorithm];
+                        if (oscoreContext.ContainsKey(CBORObject.FromObject(5))) {
+                            alg = oscoreContext[CBORObject.FromObject(5)];
                         }
                         else {
                             // M00BUG Verify what this is supposed to default to.
                             _logger.Info("No algorithm for this CWT - assuming ?");
                             alg = AlgorithmValues.AES_CCM_16_64_128;
                         }
+
                         CBORObject kdf = null;
-                        if (oneKey.ContainsName(CoseKeyKeys.kdf)) kdf = oneKey[CoseKeyKeys.kdf];
+                        if (oscoreContext.ContainsKey(CBORObject.FromObject(4))) kdf = oscoreContext[CBORObject.FromObject(4)];
+
+                        //  Build salt
+                        context = new byte[clientSalt.Length + serverSalt.Length];
+                        Array.Copy(clientSalt, context, clientSalt.Length);
+                        Array.Copy(serverSalt, 0, context, clientSalt.Length, serverSalt.Length);
 
                         SecurityContext oscoapContext = SecurityContext.DeriveContext(
-                            oneKey[CoseKeyParameterKeys.Octet_k].GetByteString(),
-                            oneKey[CoseKeyKeys.clientId].GetByteString(),
-                            oneKey[CoseKeyKeys.serverId].GetByteString(),
+                            oscoreContext[CBORObject.FromObject(1)].GetByteString(),
+                            context,
+                            oscoreContext[CBORObject.FromObject(2)].GetByteString(),
+                            oscoreContext[CBORObject.FromObject(3)].GetByteString(),
                             salt, alg, kdf);
+                        oscoapContext.GroupId = null;
 
                         oscoapContext.UserData = new List<CWT>() {cwt};
                         Program.OscoapContexts.Add(oscoapContext);
                         SecurityContextSet.AllContexts.Add(oscoapContext);
 
-                        exchange.Respond(StatusCode.Created);
+                        CBORObject cborReturn = CBORObject.NewMap();
+                        cborReturn.Add((CBORObject) Oauth_Parameter.CNonce, serverSalt);
+                        exchange.Respond( StatusCode.Created, cborReturn.EncodeToBytes(), MediaType.ApplicationAceCbor);
                     }
                     else if (cwt.Profile == (int) ProfileIds.Coap_Dtls) {
                         OneKey newKey = cwt.Cnf.Key;

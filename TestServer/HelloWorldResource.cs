@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using Com.AugustCellars. CoAP.Server.Resources;
 using Com.AugustCellars.CoAP;
+using Com.AugustCellars.CoAP.DTLS;
+
 namespace TestServer
 {
     /// <summary>
@@ -35,17 +37,17 @@ namespace TestServer
             Console.WriteLine(System.DateTime.Now.ToLongDateString());
             Console.WriteLine(Com.AugustCellars.CoAP.Util.Utils.ToString(exchange.Request));
 
-            if (exchange.Request.OscoapContext == null) {
-                exchange.Respond("Hello World! -- I see no OSCOAP here");
-            }
-            else {
+            if (exchange.Request.OscoapContext != null) {
                 Request request = exchange.Request;
 
-                if (request.HasOption(OptionType.UriQuery)) {
+                if (request.HasOption(OptionType.UriQuery))
+                {
                     int count = 0;
                     Response response = new Response(StatusCode.Content);
-                    foreach (Option options in  request.GetOptions(OptionType.UriQuery)) {
-                        switch (options.StringValue) {
+                    foreach (Option options in request.GetOptions(OptionType.UriQuery))
+                    {
+                        switch (options.StringValue)
+                        {
                             case "first=1":
                                 response.PayloadString = "Hello World!";
                                 response.AddETag(new byte[] { 0x2b });
@@ -53,11 +55,13 @@ namespace TestServer
 
                             case "second=1":
                             case "second=2":
-                                if (!request.HasOption(OptionType.Accept) || request.GetFirstOption(OptionType.Accept).IntValue != 0) {
+                                if (!request.HasOption(OptionType.Accept) || request.GetFirstOption(OptionType.Accept).IntValue != 0)
+                                {
                                     response = new Response(StatusCode.BadRequest);
                                     response.PayloadString = "Incorrect Accept option";
                                 }
-                                else {
+                                else
+                                {
                                     response.PayloadString = "Hello World!";
                                     response.AddETag(new byte[] { 0x2b });
                                     response.MaxAge = 5;
@@ -74,16 +78,26 @@ namespace TestServer
                     if (count > 1) exchange.Respond(StatusCode.BadRequest, "Only one UriQuery can be supplied");
                     else exchange.Respond(response);
                 }
-                else {
+                else
+                {
                     String s;
-                    if (exchange.Request.OscoapContext.GroupId == null) {
+                    if (exchange.Request.OscoapContext.GroupId == null)
+                    {
                         s = String.Format("Hello World! -- I see OSCOAP w/ kid of '{0}'", UTF8Encoding.UTF8.GetString(exchange.Request.OscoapContext.Recipient.Id));
                     }
-                    else {
+                    else
+                    {
                         s = $"Hello World! -- I see OSCOAP w/ gid of '{Encoding.UTF8.GetString(exchange.Request.OscoapContext.GroupId)}'";
-                }
+                    }
                     exchange.Respond(s);
                 }
+            }
+            else if (exchange.Request.Session is DTLSSession) {
+                DTLSSession ses = (DTLSSession) exchange.Request.Session;
+                exchange.Respond($"Hello World! I have a DTLS session w/ Authentcator = {ses.AuthenticationKey.GetType()}");
+            }
+            else {
+                exchange.Respond("Hello World! -- I see no OSCOAP here");
             }
         }
     }
