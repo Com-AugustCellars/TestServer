@@ -64,8 +64,8 @@ namespace server
                     return;
                 }
             }
-            else if (_allowOscore && exchange.Request.OscoapContext != null) {
-                if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoapContext)) {
+            else if (_allowOscore && exchange.Request.OscoreContext != null) {
+                if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoreContext)) {
                     Unauthorized(exchange);
                     return;
                 }
@@ -116,8 +116,8 @@ namespace server
                     return;
                 }
             }
-            else if (_allowOscore && exchange.Request.OscoapContext != null) {
-                if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoapContext)) {
+            else if (_allowOscore && exchange.Request.OscoreContext != null) {
+                if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoreContext)) {
                     Unauthorized(exchange);
                     return;
                 }
@@ -145,8 +145,8 @@ namespace server
                         return;
                     }
                 }
-                else if (_allowOscore && exchange.Request.OscoapContext != null) {
-                    if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoapContext)) {
+                else if (_allowOscore && exchange.Request.OscoreContext != null) {
+                    if (!_accessCheck.CheckAccess(Method.GET, this.Uri, exchange.Request.OscoreContext)) {
                         Unauthorized(exchange);
                         return;
                     }

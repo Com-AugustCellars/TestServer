@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using Com.AugustCellars.CoAP;
 using Com.AugustCellars.CoAP.Net;
-using Com.AugustCellars.CoAP.ResourceDirectory;
 using Com.AugustCellars.CoAP.Server;
+using Com.AugustCellars.CoAP.ResourceDirectory;
 using Com.AugustCellars.CoAP.Server.Resources;
-using RD.Net46;
 using server;
 
+#if false
 namespace TestServer
 {
     class ResourceDirectoryResource
@@ -87,3 +83,4 @@ namespace TestServer
 
     }
 }
+#endif

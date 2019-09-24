@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Channels;
+//using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +40,7 @@ namespace server
             Console.WriteLine("GET on /hello with ");
             Console.WriteLine(Com.AugustCellars.CoAP.Util.Utils.ToString(exchange.Request));
 
-            if (exchange.Request.OscoapContext == null) {
+            if (exchange.Request.OscoreContext == null) {
                 exchange.Respond("Hello World! -- I see no OSCOAP here");
             }
             else {

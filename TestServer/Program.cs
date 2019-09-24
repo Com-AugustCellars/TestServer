@@ -1,8 +1,9 @@
 ﻿using System;
 using System.CodeDom;
 using System.IO;
+using System.Linq;
 using System.Net;
-using System.Runtime.Remoting.Channels;
+//using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Threading;
 using CoAP.Examples.Resources;
@@ -12,20 +13,49 @@ using Com.AugustCellars.CoAP.Log;
 using Com.AugustCellars.CoAP.Server;
 using Com.AugustCellars.CoAP.Server.Resources;
 #if DEV_VERSION
+using System.Collections.Generic;
 using Com.AugustCellars.CoAP.TLS;
+using Com.AugustCellars.CoAP.Util;
 #endif
 
 using Com.AugustCellars.COSE;
 using Com.AugustCellars.CoAP.OSCOAP;
 using PeterO.Cbor;
 using Com.AugustCellars.CoAP.Net;
-#if DEV_VERSION
-using Com.AugustCellars.WebToken;
+#if INCLUDE_RD
+using Com.AugustCellars.CoAP.ResourceDirectory;
 #endif
+#if INCLUDE_TLS_CWT
+using Com.AugustCellars.WebToken;
+#endif 
 using server;
+using CommandLine;
+using Org.BouncyCastle.Crypto.Tls;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace TestServer
 {
+
+    public class Options
+    {
+        [Option("config", HelpText = "Load file for ")]
+        public string Config { get; set; }
+        [Option("demon", HelpText="Run as a deamon")]
+        public bool AsDemon { get; set; }
+        [Option("generate", HelpText = "Generate Keys - probably out of date")]
+        public bool GenerateKeys { get; set; } = false;
+        [Option("loadkeys", HelpText="Load keys from this file")]
+        public string LoadKeys { get; set; }
+        [Option("title", Required = false, Default = "Group Key Distribution Center", HelpText = "Set the title of the command window")]
+        public string Title { get; set; }
+        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
+        public bool Verbose { get; set; }
+        [Option("ipaddress", HelpText="Set an ip address to run on")]
+        public string IpAddress { get; set; }
+        [Option("ipAddr", HelpText="Set an ip address to run on")]
+        public string IpAddr { get; set; }
+
+    }
     class Program
     {
         private static readonly CBORObject _UsageKey = CBORObject.FromObject("usage");
@@ -106,7 +136,7 @@ namespace TestServer
                     OneKey key = new OneKey(obj[i]);
                     string[] usages = key[_UsageKey].AsString().Split(' ');
 
-                    foreach (String usage in usages) {
+                    foreach (string usage in usages) {
 
                         if (usage == "oscoap") {
                             SecurityContext ctx = SecurityContext.DeriveContext(
@@ -120,42 +150,74 @@ namespace TestServer
                         }
 #if DEV_VERSION
                         else if (usage == "oscoap-group") {
+                            CBORObject keyItem = obj[i];
                             byte[] salt = null;
-                            if (key.ContainsName(CoseKeyKeys.slt)) {
-                                salt = key[CoseKeyKeys.slt].GetByteString();
+                            if (keyItem.ContainsKey(CoseKeyKeys.slt)) {
+                                salt = keyItem[CoseKeyKeys.slt].GetByteString();
                             }
-                            SecurityContext ctx = SecurityContext.DeriveGroupContext(
-                                key[CoseKeyParameterKeys.Octet_k].GetByteString(),
-                                key[CoseKeyKeys.KeyIdentifier].GetByteString(),
-                                key[CBORObject.FromObject("sender")][CBORObject.FromObject("ID")].GetByteString(),
-                                key[CBORObject.FromObject("sign-alg")],
-                                new OneKey(obj[i]["sender"]["sign"]), 
-                                null, null, salt);
-                            foreach (CBORObject recipient in key[CBORObject.FromObject("recipients")].Values) {
+
+                            byte[] senderId = keyItem[CBORObject.FromObject("SenderId")].GetByteString();
+
+                            SecurityContext ctx = null;
+                            List<CBORObject> recipients = new List<CBORObject>();
+                            foreach (CBORObject entityKey in keyItem[CBORObject.FromObject("entities")].Values) {
+                                if (entityKey[CBORObject.FromObject("ID")].GetByteString().SequenceEqual(senderId)) {
+                                    if (ctx != null) {
+                                        Console.WriteLine("Two entities with the same ID - sender ID");
+                                    }
+                                    else {
+                                        ctx = SecurityContext.DeriveGroupContext(
+                                            keyItem[CoseKeyParameterKeys.Octet_k].GetByteString(),
+                                            keyItem[CBORObject.FromObject("GroupID")].GetByteString(),
+                                            entityKey[CBORObject.FromObject("ID")].GetByteString(),
+                                            keyItem[CBORObject.FromObject("sign-alg")],
+                                            new OneKey(entityKey["sign"]),
+                                            null, null, salt);
+                                        ctx.CountersignParams = keyItem[CBORObject.FromObject("ParCS")];
+                                        ctx.CountersignKeyParams = keyItem[CBORObject.FromObject("ParCSKey")];
+                                    }
+                                }
+                                else {
+                                    recipients.Add(entityKey);
+                                }
+                            }
+
+                            foreach (CBORObject recipient in recipients) {
                                 ctx.AddRecipient(recipient[CBORObject.FromObject("ID")].GetByteString(),
                                                  new OneKey(recipient["sign"]));
                             }
 
                             SecurityContextSet.AllContexts.Add(ctx);
+                            Console.WriteLine(ctx.ToString());
                         }
 #endif
                         else if (usage == "dtls") {
-                            if (key.HasPrivateKey()) {
-                                DtlsSignKeys.AddKey(new TlsKeyPair( key, key));
+                            if (key.ContainsName("x509_b64")) {
+                                byte[] certificateBytes = Base64.Decode(key[CBORObject.FromObject("x509_b64")].AsString());
+                                DtlsSignKeys.AddKey(new TlsKeyPair(certificateBytes, key));
                             }
                             else {
+#if INCLUDE_TLS_RPK
+                                if (key.HasPrivateKey()) {
+                                    DtlsSignKeys.AddKey(new TlsKeyPair(key, key));
+                                }
+                                else {
+                                    DtlsValidateKeys.AddKey(key);
+                                }
+#else
                                 DtlsValidateKeys.AddKey(key);
+#endif
                             }
                         }
-
+#if INCLUDE_TLS_CWT
                         else if (usage == "cwt-trust") {
                             CwtVerifiers.AddKey(new OneKey(obj[i]["key"]));
                         }
-                        
                         else if (usage == "dtls-cwt") {
                             CWT cwt = CWT.Decode(obj[i]["cwt"].EncodeToBytes(), CwtVerifiers, CwtVerifiers);
                             DtlsSignKeys.AddKey(new TlsKeyPair(cwt, new OneKey(obj[i]["key"])));
                         }
+#endif
                         else if (usage == "edhoc") {
                             if (key[CoseKeyKeys.KeyType].Equals(GeneralValues.KeyType_EC) ||
                                 key[CoseKeyKeys.KeyType].Equals(GeneralValues.KeyType_OKP)) {
@@ -185,6 +247,8 @@ namespace TestServer
 
         static void Main(string[] args)
         {
+            Console.Title = "Resource Server";
+
             ICoapConfig config = null;
             KeySet allKeys = null;
             string interopTest = null;
@@ -300,6 +364,7 @@ namespace TestServer
 
             DTLSEndPoint ep2 = new DTLSEndPoint(dtlsSignKeys, dtlsValidateKeys, port+1, CwtVerifiers);
             server.AddEndPoint(ep2);
+            ep2.TlsEventHandler += OnTlsEvent;
 
             IResource root = new HelloWorldResource("hello", true);
             server.Add(root);
@@ -367,7 +432,7 @@ namespace TestServer
             // ep2.Add(new AceOAuthTest("ace/echo", true, true, null));
 
 #if INCLUDE_RD
-            ResourceDirectoryResource.CreateResources(server);
+            ResourceDirectory.CreateResources(server);
 #endif
 
 #if DEV_VERSION
@@ -383,9 +448,10 @@ namespace TestServer
             server.Start();
 
             // server = new CoapServer(config);
-            tcp = new TLSEndPoint(dtlsSignKeys, dtlsValidateKeys, port+1);
-            tcp.Start();
-            server.AddEndPoint(tcp);
+            TLSEndPoint tcp2 = new TLSEndPoint(dtlsSignKeys, dtlsValidateKeys, port+1);
+            tcp2.TlsEventHandler += OnTlsEvent;
+            tcp2.Start();
+            server.AddEndPoint(tcp2);
 
             AceTest.Setup(server, "RS2");
 
@@ -397,6 +463,27 @@ namespace TestServer
             return server;
 
         }
+
+        static void OnTlsEvent(Object o, TlsEvent e)
+        {
+            switch (e.Code) {
+            case TlsEvent.EventCode.ClientCertificate:
+                switch (e.CertificateType) {
+                case CertificateType.X509:
+                    Console.WriteLine($"TLS Event => Client Certificate {((Certificate) e.Certificate).GetCertificateAt(0).SubjectPublicKeyInfo.ToString()}");
+                    e.Processed = true;
+                    break;
+
+                default:
+                    break;
+                }
+                break;
+
+            default:
+                break;
+            }
+        }
+
 
 
         private static void RunInteropTests(string testToRun, ICoapConfig config, EndPoint serverEndPoint)

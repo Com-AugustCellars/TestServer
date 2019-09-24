@@ -63,7 +63,7 @@ namespace TestServer
             // AuthServerList.Add(new IntrospectionServer("coap://localhost:5688/introspect", key));
             AuthServerList.Add(new IntrospectionServer("coaps://31.133.145.200/introspect", key2));
 
-            ep.TlsEventHandler = AuthzForPsk;
+            ep.TlsEventHandler += AuthzForPsk;
         }
 
         private List<CWT> _activeTokens = new List<CWT>();
@@ -248,17 +248,17 @@ namespace TestServer
                         if (oscoreContext.ContainsKey(CBORObject.FromObject(4))) kdf = oscoreContext[CBORObject.FromObject(4)];
 
                         //  Build salt
-                        context = new byte[clientSalt.Length + serverSalt.Length];
-                        Array.Copy(clientSalt, context, clientSalt.Length);
-                        Array.Copy(serverSalt, 0, context, clientSalt.Length, serverSalt.Length);
+                        byte[] newSalt = new byte[clientSalt.Length + serverSalt.Length + salt.Length];
+                        Array.Copy(salt, newSalt, salt.Length);
+                        Array.Copy(clientSalt, 0, newSalt, salt.Length, clientSalt.Length);
+                        Array.Copy(serverSalt, 0, newSalt, salt.Length + clientSalt.Length, serverSalt.Length);
 
                         SecurityContext oscoapContext = SecurityContext.DeriveContext(
                             oscoreContext[CBORObject.FromObject(1)].GetByteString(),
                             context,
                             oscoreContext[CBORObject.FromObject(2)].GetByteString(),
                             oscoreContext[CBORObject.FromObject(3)].GetByteString(),
-                            salt, alg, kdf);
-                        oscoapContext.GroupId = null;
+                            newSalt, alg, kdf);
 
                         oscoapContext.UserData = new List<CWT>() {cwt};
                         Program.OscoapContexts.Add(oscoapContext);
