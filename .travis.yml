@@ -21,5 +21,4 @@ matrix:
       os: linux
 
 script:
-    - dotnet restore
-#   - ./build.sh
+   - ./build.sh
