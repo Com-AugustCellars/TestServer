@@ -20,5 +20,6 @@ matrix:
           NUGET=dotnet
       os: linux
 
-# script:
+script:
+    - dotnet restore
 #   - ./build.sh
