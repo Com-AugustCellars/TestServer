@@ -18,7 +18,7 @@ namespace server
 
         protected override void DoGet(CoapExchange exchange)
         {
-            if (exchange.Request.OscoapContext == null) {
+            if (exchange.Request.OscoreContext == null) {
                 exchange.Respond(StatusCode.Forbidden, "Requires OSCOAP to query");
                 return;
             }

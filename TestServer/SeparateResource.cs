@@ -14,7 +14,7 @@ namespace CoAP.Examples.Resources
             : base(name)
         {
             Attributes.Title = "GET a response in a separate CoAP Message";
-            Attributes.AddResourceType("SepararateResponseTester");
+            Attributes.AddResourceType("SeparateResponseTester");
         }
 
         protected override void DoGet(CoapExchange exchange)

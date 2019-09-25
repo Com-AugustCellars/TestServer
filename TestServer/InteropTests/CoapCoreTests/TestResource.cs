@@ -44,7 +44,7 @@ namespace TestServer.InteropTests.CoapCoreTests
         protected override void DoPost(CoapExchange exchange)
         {
             exchange.LocationPath = "/location1/location2/location3";
-            exchange.Respond(StatusCode.Changed);
+            exchange.Respond(StatusCode.Created);
         }
 
         protected override void DoPut(CoapExchange exchange)

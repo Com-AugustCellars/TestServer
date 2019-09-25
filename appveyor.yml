@@ -1,0 +1,10 @@
+image: Visual Studio 2019
+
+install:
+    appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+
+before_build:
+    nuget restore server.sln
+
+build:
+    project: server.sln

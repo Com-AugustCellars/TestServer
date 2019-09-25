@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "server": {
+      "commandName": "Project",
+      "workingDirectory": "D:\\Projects\\coap\\CoAP\\TestServer\\TestServer"
+    }
+  }
+}
