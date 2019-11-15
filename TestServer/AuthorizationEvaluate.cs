@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using Com.AugustCellars.CoAP;
 using Com.AugustCellars.CoAP.OSCOAP;
 using Com.AugustCellars.COSE;
-using Com.AugustCellars.WebToken;
+using Com.AugustCellars.WebToken.CWT;
 using Com.AugustCellars.CoAP.OAuth;
+using Com.AugustCellars.WebToken.Common;
 
 namespace TestServer
 {
@@ -16,17 +17,17 @@ namespace TestServer
 
         public bool CheckAccess(Method operation, string url, OneKey keyIdentity)
         {
-            return CheckAccess(operation, url, (List<CWT>)keyIdentity.UserData);
+            return CheckAccess(operation, url, (List<Cwt>)keyIdentity.UserData);
         }
 
         public bool CheckAccess(Method operation, string url, SecurityContext context)
         {
-            return CheckAccess(operation, url, (List<CWT>)context.UserData);
+            return CheckAccess(operation, url, (List<Cwt>)context.UserData);
         }
 
-        public bool CheckAccess(Method operation, string url, List<CWT> cwtList)
+        public bool CheckAccess(Method operation, string url, List<Cwt> cwtList)
         {
-            foreach (CWT cwt in cwtList) {
+            foreach (Cwt cwt in cwtList) {
                 if (CheckAccess(operation, url, cwt)) return true;
             }
             return false;
@@ -34,10 +35,10 @@ namespace TestServer
 
         public bool CheckAccess(Method operation, string audience, string scope, OneKey context)
         {
-            return CheckAccess(operation, audience, scope, (List<CWT>) context.UserData);
+            return CheckAccess(operation, audience, scope, (List<Cwt>) context.UserData);
         }
 
-        public bool CheckAccess(Method operation, string url, CWT cwt)
+        public bool CheckAccess(Method operation, string url, Cwt cwt)
         {
             Permission p = new Permission(url, operation);
             PermissionSet permissionSet = new PermissionSet(cwt.GetClaim(ClaimId.Scope));
@@ -50,17 +51,17 @@ namespace TestServer
             return false;
         }
 
-        public bool CheckAccess(Method operation, string audience, string scope, List<CWT> cwtList)
+        public bool CheckAccess(Method operation, string audience, string scope, List<Cwt> cwtList)
         {
             if (cwtList == null) return false;
 
-            foreach (CWT cwt in cwtList) {
+            foreach (Cwt cwt in cwtList) {
                 if (CheckAccess(operation, scope, cwt)) return true;
             }
             return false;
         }
 
-        public bool CheckAccess(Method operation, string audience, string scope, CWT cwt)
+        public bool CheckAccess(Method operation, string audience, string scope, Cwt cwt)
         {
             Permission p = new Permission(scope, operation);
             PermissionSet permissionSet = new PermissionSet(cwt.GetClaim(ClaimId.Scope));
