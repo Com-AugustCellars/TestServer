@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,6 +9,7 @@ using CoAP.Examples.Resources;
 using Com.AugustCellars.CoAP;
 using Com.AugustCellars.CoAP.DTLS;
 using Com.AugustCellars.CoAP.Log;
+using Com.AugustCellars.CoAP.Net;
 using Com.AugustCellars.CoAP.Server;
 using Com.AugustCellars.CoAP.Server.Resources;
 #if DEV_VERSION
@@ -21,7 +21,6 @@ using Com.AugustCellars.CoAP.Util;
 using Com.AugustCellars.COSE;
 using Com.AugustCellars.CoAP.OSCOAP;
 using PeterO.Cbor;
-using Com.AugustCellars.CoAP.Net;
 #if INCLUDE_RD
 using Com.AugustCellars.CoAP.ResourceDirectory;
 #endif
@@ -63,7 +62,7 @@ namespace TestServer
         private static readonly TlsKeyPairSet DtlsSignKeys = new TlsKeyPairSet();
         public static readonly KeySet DtlsValidateKeys = new KeySet();
         private static readonly KeySet edhocKeys = new KeySet();
-        private static OneKey edhocSign = null;
+        private static OneKey edhocSign;
 
 
         public static SecurityContextSet OscoapContexts;
@@ -94,17 +93,29 @@ namespace TestServer
             for (int i = 0; i < 4; i++) {
                 key = new OneKey();
                 key.Add(CoseKeyKeys.KeyType, GeneralValues.KeyType_Octet);
-                if (i == 3) key.Add(CoseKeyKeys.KeyIdentifier, CBORObject.FromObject(Encoding.UTF8.GetBytes("Key#2")));
-                else
+                if (i == 3) {
+                    key.Add(CoseKeyKeys.KeyIdentifier, CBORObject.FromObject(Encoding.UTF8.GetBytes("Key#2")));
+                }
+                else {
                     key.Add(CoseKeyKeys.KeyIdentifier,
-                            CBORObject.FromObject(Encoding.UTF8.GetBytes("Key#" + i.ToString())));
-                if (i == 3) key.Add(CoseKeyKeys.Algorithm, AlgorithmValues.AES_CCM_64_128_128);
-                else key.Add(CoseKeyKeys.Algorithm, AlgorithmValues.AES_CCM_64_64_128);
+                        CBORObject.FromObject(Encoding.UTF8.GetBytes("Key#" + i.ToString())));
+                }
+
+                if (i == 3) {
+                    key.Add(CoseKeyKeys.Algorithm, AlgorithmValues.AES_CCM_64_128_128);
+                }
+                else {
+                    key.Add(CoseKeyKeys.Algorithm, AlgorithmValues.AES_CCM_64_64_128);
+                }
+
                 key.Add(CBORObject.FromObject("KDF"), AlgorithmValues.dir_kdf);
                 key.Add(CBORObject.FromObject("SenderID"), CBORObject.FromObject(Encoding.UTF8.GetBytes("client")));
                 key.Add(CBORObject.FromObject("RecipID"), CBORObject.FromObject(Encoding.UTF8.GetBytes("server")));
                 byte[] keyValue = new byte[35];
-                for (int j = 0; j < keyValue.Length; j++) keyValue[j] = (byte) (((i + 1) * (j + 1)));
+                for (int j = 0; j < keyValue.Length; j++) {
+                    keyValue[j] = (byte) (((i + 1) * (j + 1)));
+                }
+
                 key.Add(CoseKeyParameterKeys.Octet_k, CBORObject.FromObject(keyValue));
 
                 keys.AddKey(key);
@@ -120,6 +131,8 @@ namespace TestServer
         }
 
         static KeySet CwtVerifiers = new KeySet();
+
+        static SecurityContextSet ProgramContexts = new SecurityContextSet();
 
         static KeySet LoadKeys(string fileName)
         {
@@ -145,7 +158,7 @@ namespace TestServer
                                 key[CBORObject.FromObject("RecipID")].GetByteString(),
                                 key[CBORObject.FromObject("SenderID")].GetByteString(), null,
                                 key[CoseKeyKeys.Algorithm]);
-                            SecurityContextSet.AllContexts.Add(ctx);
+                            ProgramContexts.Add(ctx);
                             break;
                         }
 #if DEV_VERSION
@@ -187,7 +200,7 @@ namespace TestServer
                                                  new OneKey(recipient["sign"]));
                             }
 
-                            SecurityContextSet.AllContexts.Add(ctx);
+                            ProgramContexts.Add(ctx);
                             Console.WriteLine(ctx.ToString());
                         }
 #endif
@@ -242,8 +255,8 @@ namespace TestServer
             return keys;
         }
 
-        static EndPoint ServerEndPoint = null;
-        static bool AsDemon = false;
+        static EndPoint ServerEndPoint;
+        static bool AsDemon;
 
         static void Main(string[] args)
         {
@@ -426,7 +439,7 @@ namespace TestServer
             AceOAuthTest r = new AceOAuthTest("ace-echo", true, true, UseAsServer);
             r.AuthTokenProcessor = authZ;
             server.Add(r);
-            OscoapContexts = SecurityContextSet.AllContexts;
+            server.SecurityContexts.Add(ProgramContexts);
 #endif
 
             // ep2.Add(new AceOAuthTest("ace/echo", true, true, null));
@@ -470,7 +483,7 @@ namespace TestServer
             case TlsEvent.EventCode.ClientCertificate:
                 switch (e.CertificateType) {
                 case CertificateType.X509:
-                    Console.WriteLine($"TLS Event => Client Certificate {((Certificate) e.Certificate).GetCertificateAt(0).SubjectPublicKeyInfo.ToString()}");
+                    Console.WriteLine($"TLS Event => Client Certificate {((Certificate) e.Certificate).GetCertificateAt(0).SubjectPublicKeyInfo}");
                     e.Processed = true;
                     break;
 

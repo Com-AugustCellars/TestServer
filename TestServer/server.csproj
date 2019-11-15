@@ -26,7 +26,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Com.AugustCellars.CoAP" Version="1.4.0" />
+    <PackageReference Include="Com.AugustCellars.CoAP" Version="1.6.0" />
     <PackageReference Include="Com.AugustCellars.CoAP.TLS" Version="0.2.0" />
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
   </ItemGroup>

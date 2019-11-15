@@ -15,6 +15,8 @@ using PeterO.Cbor;
 using Com.AugustCellars.WebToken;
 using Com.AugustCellars.CoAP.Log;
 using Com.AugustCellars.CoAP.OSCOAP;
+using Com.AugustCellars.WebToken.Common;
+using Com.AugustCellars.WebToken.CWT;
 using server;
 using Request = Com.AugustCellars.CoAP.Request;
 
@@ -66,7 +68,7 @@ namespace TestServer
             ep.TlsEventHandler += AuthzForPsk;
         }
 
-        private List<CWT> _activeTokens = new List<CWT>();
+        private List<Cwt> _activeTokens = new List<Cwt>();
 
         protected override void DoPost(CoapExchange exchange)
         {
@@ -74,21 +76,21 @@ namespace TestServer
                 exchange.Accept();
 
                 Request req = exchange.Request;
-                CWT cwt = null;
+                Cwt cwt = null;
 
                 switch (req.ContentFormat) {
                 case MediaType.Undefined: // No Media type in the message
                     //  Don't know if this is correct.
-                    cwt = CWT.Decode(req.Payload, _myKeys, _asSigningKeys);
+                    cwt = Cwt.Decode(req.Payload, _myKeys, _asSigningKeys);
                     break;
 
                 case MediaType.ApplicationCwt:
-                    cwt = CWT.Decode(req.Payload, _myKeys, _asSigningKeys);
+                    cwt = Cwt.Decode(req.Payload, _myKeys, _asSigningKeys);
                     break;
 
                 case MediaType.ApplicationAceCbor:
                     CBORObject obj = CBORObject.DecodeFromBytes(req.Payload);
-                    cwt = CWT.Decode(obj[CBORObject.FromObject(Oauth_Parameter.Access_Token.Key)].GetByteString(), _myKeys, _asSigningKeys);
+                    cwt = Cwt.Decode(obj[CBORObject.FromObject(Oauth_Parameter.Access_Token.Key)].GetByteString(), _myKeys, _asSigningKeys);
                     break;
 
                 default:
@@ -111,8 +113,8 @@ namespace TestServer
                 }
 
             if (cwt.HasClaim(ClaimId.ExpirationTime)) {
-                    _logger.Info(m => m("Token expires at {0}", cwt.ExperationTime));
-                    if (cwt.ExperationTime <= DateTime.Now) {
+                    _logger.Info(m => m("Token expires at {0}", cwt.ExpirationTime));
+                    if (cwt.ExpirationTime <= DateTime.Now) {
                         exchange.Respond(StatusCode.Unauthorized);
                         return;
                     }
@@ -163,8 +165,8 @@ namespace TestServer
 
                 //  Is this a CWT that I have already seen?  If so then I can safely ignore it
 
-                List<CWT> matches = new List<CWT>();
-                foreach (CWT have in _activeTokens) {
+                List<Cwt> matches = new List<Cwt>();
+                foreach (Cwt have in _activeTokens) {
                     //  Exact same token - replay
                     if (have.HasClaim(ClaimId.CwtId) && cwt.HasClaim(ClaimId.CwtId) && have.Issuer == cwt.Issuer &&
                         have.CwtId == cwt.CwtId) {
@@ -260,9 +262,10 @@ namespace TestServer
                             oscoreContext[CBORObject.FromObject(3)].GetByteString(),
                             newSalt, alg, kdf);
 
-                        oscoapContext.UserData = new List<CWT>() {cwt};
+                        oscoapContext.UserData = new List<Cwt>() {cwt};
                         Program.OscoapContexts.Add(oscoapContext);
-                        SecurityContextSet.AllContexts.Add(oscoapContext);
+                        
+                        // SecurityContextSet.AllContexts.Add(oscoapContext);
 
                         CBORObject cborReturn = CBORObject.NewMap();
                         cborReturn.Add((CBORObject) Oauth_Parameter.CNonce, serverSalt);
@@ -270,7 +273,7 @@ namespace TestServer
                     }
                     else if (cwt.Profile == (int) ProfileIds.Coap_Dtls) {
                         OneKey newKey = cwt.Cnf.Key;
-                        newKey.UserData = new List<CWT>() {cwt};
+                        newKey.UserData = new List<Cwt>() {cwt};
                         Program.DtlsValidateKeys.AddKey(newKey);
 
                         exchange.Respond(StatusCode.Created);
@@ -380,12 +383,12 @@ namespace TestServer
 
             OneKey newKey = new OneKey(iResponse.Cnf.Key.AsCBOR());
 
-            CWT cwt = new CWT();
+            Cwt cwt = new Cwt();
             cwt.Profile = iResponse.Profile;
             cwt.Cnf = iResponse.Cnf;
             cwt.Audience = iResponse.Audience;
             cwt.SetClaim(ClaimId.Scope, iResponse.Scope);
-            newKey.UserData = new List<CWT>() {cwt};
+            newKey.UserData = new List<Cwt>() {cwt};
 
             byte[] kid = newKey[CoseKeyKeys.KeyIdentifier].GetByteString();
 
@@ -418,7 +421,7 @@ namespace TestServer
             }
 
             try {
-                CWT cwt = CWT.Decode(tlsEvent.PskName, _myKeys, _asSigningKeys);
+                Cwt cwt = Cwt.Decode(tlsEvent.PskName, _myKeys, _asSigningKeys);
 
                 // M00TODO - fill in a default value if there is no profile in the token
                 if (cwt.Profile == null) {
@@ -433,7 +436,7 @@ namespace TestServer
                 // M00TODO - Actually process the CWT.
 
                 OneKey newKey = new OneKey(cwt.Cnf.Key.AsCBOR());
-                newKey.UserData = new List<CWT> {cwt};
+                newKey.UserData = new List<Cwt> {cwt};
                 tlsEvent.KeyValue = newKey;
 
             }
